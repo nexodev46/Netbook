@@ -24,8 +24,14 @@
                 <div class="nav-link"><span class="material-symbols-rounded">work</span><p>Empleos</p></div>
                 <div class="nav-link"><span class="material-symbols-rounded">chat</span><p>Mensajes</p></div>
                 <div class="nav-link"><span class="material-symbols-rounded">notifications</span><p>Notificaciones</p></div>
+                
+                <div class="nav-link" id="btn-logout" style="color: #ffb4b4;">
+                    <span class="material-symbols-rounded">logout</span>
+                    <p>Salir</p>
+                </div>
+
                 <div class="nav-user">
-                    <img src="https://i.pravatar.cc/150?u=luciano" class="avatar-nav">
+                    <img src="https://i.pravatar.cc/150?u=luciano" class="avatar-nav" id="user-photo-nav">
                     <span class="material-symbols-rounded">arrow_drop_down</span>
                 </div>
             </nav>
@@ -38,10 +44,10 @@
             <aside class="col-left">
                 <div class="card profile-widget">
                     <div class="cover"></div>
-                    <img src="https://i.pravatar.cc/150?u=luciano" class="avatar-lg">
+                    <img src="https://i.pravatar.cc/150?u=luciano" class="avatar-lg" id="user-photo-side">
                     <div class="info">
-                        <h3>Luciano Novo</h3>
-                        <p>Operations IT en SaaS</p>
+                        <h3 id="user-name-side">Cargando...</h3>
+                        <p>Usuario de Netbook</p>
                     </div>
                     <div class="actions">
                         <button class="btn-sec">Editar</button>
@@ -57,7 +63,7 @@
                         <span>Crear publicación</span>
                     </div>
                     <div class="post-input">
-                        <img src="https://i.pravatar.cc/150?u=luciano" class="avatar-sm">
+                        <img src="https://i.pravatar.cc/150?u=luciano" class="avatar-sm" id="user-photo-post">
                         <textarea id="post-text" placeholder="¿Qué quieres compartir hoy?"></textarea>
                     </div>
                     <div class="post-bottom">
@@ -101,6 +107,7 @@
         </div>
     </main>
 
+    <script type="module" src="js/auth.js"></script> 
     <script type="module" src="js/posts.js"></script>
 </body>
 </html>

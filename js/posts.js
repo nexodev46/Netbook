@@ -4,6 +4,9 @@ import {
     doc, updateDoc, arrayUnion, arrayRemove, increment 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// IMPORTANTE: Agregamos la función para detectar al usuario
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
 const btnPublish = document.getElementById("btn-publish-final");
 const postText = document.getElementById("post-text");
 const fileInput = document.getElementById("file-upload");
@@ -12,12 +15,32 @@ const postsContainer = document.getElementById("posts-container");
 const CLOUD_NAME = "dzgbahmog"; 
 const UPLOAD_PRESET = "ml_default"; 
 
-// --- PUBLICAR POST ---
+// 1. VARIABLE GLOBAL PARA EL USUARIO
+let currentUser = null;
+
+// 2. DETECTAR SI HAY UN USUARIO CONECTADO
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUser = user;
+        // Actualizamos la interfaz con los datos reales del perfil
+        if(document.querySelector(".avatar-nav")) document.querySelector(".avatar-nav").src = user.photoURL || "https://i.pravatar.cc/150";
+        if(document.querySelector(".info h3")) document.querySelector(".info h3").innerText = user.displayName || "Usuario";
+    } else {
+        // Si no hay nadie logueado, lo mandamos al login automáticamente
+        window.location.href = "login.html";
+    }
+});
+
+// --- PUBLICAR POST (AHORA CON DATOS REALES) ---
 btnPublish.onclick = async () => {
     const file = fileInput.files[0];
     const text = postText.value;
-    if (!file && !text) return;
+    
+    // Si no hay usuario o no hay contenido, no hace nada
+    if (!currentUser || (!file && !text)) return;
+    
     btnPublish.disabled = true;
+    btnPublish.innerText = "Publicando...";
 
     try {
         let url = "";
@@ -30,9 +53,11 @@ btnPublish.onclick = async () => {
             url = data.secure_url;
         }
 
+        // GUARDAMOS EN FIREBASE CON LOS DATOS DEL PERFIL ACTUAL
         await addDoc(collection(db, "posts"), {
-            autor: "Luciano Novo",
-            fotoAutor: "https://i.pravatar.cc/150?u=luciano",
+            autor: currentUser.displayName,  // Nombre real de la cuenta
+            fotoAutor: currentUser.photoURL, // Foto real de la cuenta
+            userId: currentUser.uid,         // ID único del usuario
             contenido: text,
             imagenUrl: url,
             fecha: serverTimestamp(),
@@ -42,8 +67,12 @@ btnPublish.onclick = async () => {
 
         postText.value = "";
         fileInput.value = "";
-    } catch (e) { console.error(e); }
-    finally { btnPublish.disabled = false; btnPublish.innerText = "Publicar"; }
+    } catch (e) { 
+        console.error(e); 
+    } finally { 
+        btnPublish.disabled = false; 
+        btnPublish.innerText = "Publicar"; 
+    }
 };
 
 // --- RENDERIZAR FEED ---
@@ -54,16 +83,16 @@ onSnapshot(q, (snap) => {
     snap.forEach(postDoc => {
         const d = postDoc.data();
         const postId = postDoc.id; 
-        const userId = "Luciano Novo"; 
         
-        const hasLiked = d.likedBy && d.likedBy.includes(userId);
+        // Verificamos si el usuario actual le dio like
+        const hasLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
         const likesCount = d.likedBy ? d.likedBy.length : 0;
 
         const article = document.createElement("article");
         article.className = "post-card";
         article.innerHTML = `
             <header class="post-header">
-                <img src="${d.fotoAutor}" class="avatar-sm">
+                <img src="${d.fotoAutor || 'https://i.pravatar.cc/150'}" class="avatar-sm">
                 <div>
                     <h4>${d.autor}</h4>
                     <p style="font-size:12px; color:gray;">Publicado ahora</p>
@@ -95,37 +124,30 @@ onSnapshot(q, (snap) => {
             </div>
         `;
 
-        // --- LÓGICA DE LIKE ---
+        // Lógica de Likes usando el UID real
         article.querySelector(`#like-${postId}`).onclick = async () => {
+            if(!currentUser) return;
             const postRef = doc(db, "posts", postId);
             if (hasLiked) {
-                await updateDoc(postRef, { likedBy: arrayRemove(userId) });
+                await updateDoc(postRef, { likedBy: arrayRemove(currentUser.uid) });
             } else {
-                await updateDoc(postRef, { likedBy: arrayUnion(userId) });
+                await updateDoc(postRef, { likedBy: arrayUnion(currentUser.uid) });
             }
         };
 
-        // --- LÓGICA DE COMPARTIR (INTEGRADA) ---
+        // ... (el resto de las funciones de compartir y comentarios se mantienen igual)
+        
         article.querySelector(`#share-${postId}`).onclick = async () => {
-            const shareData = {
-                title: 'Netbook - Publicación de ' + d.autor,
-                text: d.contenido,
-                url: window.location.href 
-            };
-
             try {
                 if (navigator.share) {
-                    await navigator.share(shareData);
+                    await navigator.share({ title: 'Netbook', text: d.contenido, url: window.location.href });
                 } else {
                     await navigator.clipboard.writeText(window.location.href);
-                    alert("¡Enlace copiado al portapapeles!");
+                    alert("Enlace copiado");
                 }
-            } catch (err) {
-                console.log('Error al compartir:', err);
-            }
+            } catch (err) { console.log(err); }
         };
 
-        // --- LÓGICA DE COMENTARIOS ---
         article.querySelector(`#comment-btn-${postId}`).onclick = () => {
             const section = article.querySelector(`#comments-section-${postId}`);
             section.style.display = section.style.display === "none" ? "block" : "none";
@@ -134,10 +156,10 @@ onSnapshot(q, (snap) => {
 
         article.querySelector(`#send-${postId}`).onclick = async () => {
             const input = article.querySelector(`#input-${postId}`);
-            if (!input.value) return;
+            if (!input.value || !currentUser) return;
             await addDoc(collection(db, "posts", postId, "comentarios"), {
                 texto: input.value,
-                autor: userId,
+                autor: currentUser.displayName,
                 fecha: serverTimestamp()
             });
             await updateDoc(doc(db, "posts", postId), { comentariosCount: increment(1) });

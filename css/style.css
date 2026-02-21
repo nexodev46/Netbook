@@ -159,3 +159,31 @@ body { background: var(--bg); color: #191919; }
         font-size: 16px;
     }
 }
+
+
+
+
+
+
+
+/* Estilos específicos para el login */
+.login-input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0 16px 0;
+    border: 1px solid #666;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.login-input:focus {
+    border-color: var(--blue);
+    outline: 2px solid #0a66c233;
+    box-shadow: 0 0 5px rgba(10, 102, 194, 0.3);
+}
+
+.login-container {
+    background: white;
+    border-radius: 8px;
+}
