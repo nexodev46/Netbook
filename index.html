@@ -22,16 +22,21 @@
                 <div class="nav-link active"><span class="material-symbols-rounded">home</span><p>Inicio</p></div>
                 <div class="nav-link"><span class="material-symbols-rounded">group</span><p>Mi Red</p></div>
                 <div class="nav-link"><span class="material-symbols-rounded">work</span><p>Empleos</p></div>
-                <div class="nav-link"><span class="material-symbols-rounded">chat</span><p>Mensajes</p></div>
-                <div class="nav-link"><span class="material-symbols-rounded">notifications</span><p>Notificaciones</p></div>
                 
-                <div class="nav-link" id="btn-logout" style="color: #ffb4b4;">
+                <div class="nav-link" id="nav-messages" style="cursor: pointer;">
+                    <span class="material-symbols-rounded">chat</span>
+                    <p>Mensajes</p>
+                </div>
+
+                <div class="nav-link" id="nav-notifications"><span class="material-symbols-rounded">notifications</span><p>Notificaciones</p></div>
+                
+                <div class="nav-link" id="btn-logout" style="color: #ffb4b4; cursor: pointer;">
                     <span class="material-symbols-rounded">logout</span>
                     <p>Salir</p>
                 </div>
 
                 <div class="nav-user">
-                    <img src="https://i.pravatar.cc/150?u=luciano" class="avatar-nav" id="user-photo-nav">
+                    <img src="https://i.pravatar.cc/150" class="avatar-nav" id="user-photo-nav">
                     <span class="material-symbols-rounded">arrow_drop_down</span>
                 </div>
             </nav>
@@ -44,7 +49,7 @@
             <aside class="col-left">
                 <div class="card profile-widget">
                     <div class="cover"></div>
-                    <img src="https://img.freepik.com/premium-photo/blue-white-letter-n-is-blue-background_1294094-764.jpg" class="avatar-lg" id="user-photo-side">
+                    <img src="https://i.pravatar.cc/150" class="avatar-lg" id="user-photo-side">
                     <div class="info">
                         <h3 id="user-name-side">Cargando...</h3>
                         <p>Usuario de Netbook</p>
@@ -63,11 +68,11 @@
                         <span>Crear publicación</span>
                     </div>
                     <div class="post-input">
-                        <img src="https://img.freepik.com/premium-photo/white-letter-n-is-blue-background_1294094-775.jpg" class="avatar-sm" id="user-photo-post">
+                        <img src="https://i.pravatar.cc/150" class="avatar-sm" id="user-photo-post">
                         <textarea id="post-text" placeholder="¿Qué quieres compartir hoy?"></textarea>
                     </div>
                     <div class="post-bottom">
-                        <label for="file-upload" class="attach">
+                        <label for="file-upload" class="attach" style="cursor: pointer;">
                             <span class="material-symbols-rounded">attachment</span> Adjuntar archivo
                         </label>
                         <input type="file" id="file-upload" hidden>
@@ -90,24 +95,49 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="card widget">
-                    <h4>Ofertas de Empleo</h4>
-                    <div class="job-row">
-                        <strong>Desarrollador Frontend</strong>
-                        <p>GlobalTech Solutions</p>
-                        <div class="job-footer">
-                             <button class="btn-connect">Conectar</button>
-                             <a href="#">Ver más</a>
-                        </div>
-                    </div>
-                </div>
             </aside>
-
         </div>
     </main>
 
+    <div id="chat-window" class="card" style="display:none; position:fixed; bottom:20px; right:20px; width:320px; height:420px; z-index:1000; flex-direction:column; box-shadow: 0 8px 30px rgba(0,0,0,0.3); background: white; border-radius: 8px;">
+        <header style="padding:12px; background:#0a66c2; color:white; display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="material-symbols-rounded" style="font-size:20px;">chat</span>
+                <span id="chat-user-name" style="font-weight:600; font-size:14px;">Mensajes</span>
+            </div>
+            <button id="close-chat" style="background:none; border:none; color:white; cursor:pointer;">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </header>
+        
+        <div id="chat-messages" style="flex:1; overflow-y:auto; padding:15px; background:#f4f7f9; display:flex; flex-direction:column; gap:10px;">
+            <p style="text-align:center; color:gray; font-size:12px; margin-top:20px;">Selecciona un profesional para chatear</p>
+        </div>
+
+        <div style="padding:12px; display:flex; gap:8px; border-top:1px solid #eee; background: white; border-radius: 0 0 8px 8px;">
+            <input type="text" id="chat-input" placeholder="Escribe un mensaje..." style="flex:1; border-radius:20px; border:1px solid #ddd; padding:10px 15px; outline:none; font-size:14px;">
+            <button id="btn-send-chat" style="background:#0a66c2; color:white; border:none; border-radius:50%; width:38px; height:38px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                <span class="material-symbols-rounded" style="font-size:20px;">send</span>
+            </button>
+        </div>
+    </div>
+
     <script type="module" src="js/auth.js"></script> 
     <script type="module" src="js/posts.js"></script>
+    <script type="module" src="js/chats.js"></script>
+
+    <script>
+        // Función para cerrar el chat
+        document.getElementById('close-chat').onclick = () => {
+            document.getElementById('chat-window').style.display = 'none';
+        };
+
+        // Función para abrir el chat desde la barra de navegación
+        document.getElementById('nav-messages').onclick = () => {
+            const chatWin = document.getElementById('chat-window');
+            chatWin.style.display = (chatWin.style.display === 'none') ? 'flex' : 'none';
+        };
+    </script>
+
 </body>
 </html>

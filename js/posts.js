@@ -1,7 +1,7 @@
 import { db, auth } from './firebase-config.js';
 import { 
     collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, 
-    doc, updateDoc, arrayUnion, arrayRemove, increment, deleteDoc // Añadido deleteDoc
+    doc, updateDoc, arrayUnion, arrayRemove, increment, deleteDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -16,6 +16,7 @@ const UPLOAD_PRESET = "ml_default";
 
 let currentUser = null;
 
+// 1. Manejo de Sesión
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
@@ -26,6 +27,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+// 2. Publicar Post
 btnPublish.onclick = async () => {
     const file = fileInput.files[0];
     const text = postText.value;
@@ -66,6 +68,7 @@ btnPublish.onclick = async () => {
     }
 };
 
+// 3. Cargar Posts en Tiempo Real
 const q = query(collection(db, "posts"), orderBy("fecha", "desc"));
 
 onSnapshot(q, (snap) => {
@@ -79,6 +82,8 @@ onSnapshot(q, (snap) => {
 
         const article = document.createElement("article");
         article.className = "post-card";
+        
+        // Estructura Unificada (Contenido + Botón Chat)
         article.innerHTML = `
             <header class="post-header" style="display: flex; justify-content: space-between; align-items: start; padding: 12px; position: relative;">
                 <div style="display: flex; gap: 10px;">
@@ -94,7 +99,7 @@ onSnapshot(q, (snap) => {
                         <button class="action-btn-dots" id="dots-${postId}" style="background:none; border:none; cursor:pointer; color:#666;">
                             <span class="material-symbols-rounded">more_horiz</span>
                         </button>
-                        <div id="menu-${postId}" class="card" style="display:none; position:absolute; right:0; top:30px; z-index:100; width:120px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding:5px;">
+                        <div id="menu-${postId}" class="card" style="display:none; position:absolute; right:0; top:30px; z-index:100; width:120px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding:5px; background:white;">
                             <button id="del-${postId}" style="width:100%; background:none; border:none; color:red; display:flex; align-items:center; gap:5px; cursor:pointer; padding:8px; font-weight:600;">
                                 <span class="material-symbols-rounded" style="font-size:18px;">delete</span> Eliminar
                             </button>
@@ -104,20 +109,26 @@ onSnapshot(q, (snap) => {
             </header>
 
             <div style="padding:0 16px 12px; font-size:14px;">${d.contenido}</div>
-            ${d.imagenUrl ? `<img src="${d.imagenUrl}" class="post-img">` : ""}
+            ${d.imagenUrl ? `<img src="${d.imagenUrl}" class="post-img" style="width:100%; max-height:400px; object-fit:cover;">` : ""}
             
             <div class="post-stats" style="padding: 8px 16px; font-size: 12px; color: #666; border-top: 1px solid #eee;">
                 <span>👍 <span id="likes-count-${postId}">${likesCount}</span> personas</span> • 
                 <span>💬 ${d.comentariosCount || 0} comentarios</span>
             </div>
 
-            <footer class="post-actions">
+            <footer class="post-actions" style="display:flex; justify-content: space-around; padding: 5px; border-top: 1px solid #eee;">
                 <button class="action-btn" id="like-${postId}" style="color: ${hasLiked ? '#0a66c2' : 'inherit'}">
                     <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' ${hasLiked ? 1 : 0}">thumb_up</span> 
-                    ${hasLiked ? 'Te gusta' : 'Me gusta'}
+                    Me gusta
                 </button>
-                <button class="action-btn" id="comment-btn-${postId}"><span class="material-symbols-rounded">chat_bubble</span> Comentar</button>
-                <button class="action-btn" id="share-${postId}"><span class="material-symbols-rounded">share</span> Compartir</button>
+                
+                <button class="action-btn chat-trigger" data-id="${d.userId}" data-name="${d.autor}">
+                    <span class="material-symbols-rounded">chat</span> Mensaje
+                </button>
+
+                <button class="action-btn" id="comment-btn-${postId}">
+                    <span class="material-symbols-rounded">chat_bubble</span> Comentar
+                </button>
             </footer>
 
             <div id="comments-section-${postId}" class="comments-list" style="padding: 10px 16px; background: #f8f9fa; display: none; border-top: 1px solid #eee;">
@@ -129,17 +140,15 @@ onSnapshot(q, (snap) => {
             </div>
         `;
 
-        // Lógica de los tres puntitos
+        // Lógica de Menú Eliminar
         if (currentUser && d.userId === currentUser.uid) {
             const btnDots = article.querySelector(`#dots-${postId}`);
             const menu = article.querySelector(`#menu-${postId}`);
             const btnDel = article.querySelector(`#del-${postId}`);
-
             btnDots.onclick = (e) => {
                 e.stopPropagation();
                 menu.style.display = menu.style.display === "none" ? "block" : "none";
             };
-
             btnDel.onclick = async () => {
                 if(confirm("¿Seguro que quieres borrar este post?")) {
                     await deleteDoc(doc(db, "posts", postId));
@@ -158,17 +167,7 @@ onSnapshot(q, (snap) => {
             }
         };
 
-        article.querySelector(`#share-${postId}`).onclick = async () => {
-            try {
-                if (navigator.share) {
-                    await navigator.share({ title: 'Netbook', text: d.contenido, url: window.location.href });
-                } else {
-                    await navigator.clipboard.writeText(window.location.href);
-                    alert("Enlace copiado");
-                }
-            } catch (err) { console.log(err); }
-        };
-
+        // Lógica de Comentarios
         article.querySelector(`#comment-btn-${postId}`).onclick = () => {
             const section = article.querySelector(`#comments-section-${postId}`);
             section.style.display = section.style.display === "none" ? "block" : "none";
@@ -191,6 +190,7 @@ onSnapshot(q, (snap) => {
     });
 });
 
+// Función para cargar comentarios
 async function cargarComentarios(postId) {
     const list = document.getElementById(`list-${postId}`);
     const qCom = query(collection(db, "posts", postId, "comentarios"), orderBy("fecha", "asc"));
