@@ -102,70 +102,60 @@ body { background: var(--bg); color: #191919; }
 
 
 
-/* Ajuste para la barra superior */
-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 5%;
-    background-color: #0a66c2;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    gap: 10px;
-}
 
-/* El buscador debe hacerse pequeño en móvil */
-.search-bar {
-    flex: 1; /* Esto hace que ocupe el espacio disponible */
-    min-width: 150px;
-}
 
-.search-bar input {
-    width: 100%;
-    padding: 8px;
-    border-radius: 4px;
-    border: none;
-}
+/* --- ARREGLOS PARA MÓVIL (SIN TOCAR EL DISEÑO DE LAPTOP) --- */
 
-/* Los iconos de navegación */
-.nav-icons {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-/* OCULTAR TEXTO EN MÓVIL: Esto es vital */
 @media (max-width: 768px) {
-    .nav-icons span:not(.material-symbols-rounded) {
-        display: none; /* Oculta palabras como "Inicio", "Mi Red" y deja solo el icono */
+    /* 1. Ajusta la barra azul para que quepa todo */
+    .nav-content {
+        padding: 0 10px;
+        gap: 5px;
     }
-    
-    header {
-        padding: 10px 15px;
+
+    /* Hace el buscador más pequeño para que no empuje a los iconos */
+    .search-container {
+        width: 130px; 
     }
-}
 
+    /* Oculta los textos (Inicio, Red, etc.) y deja solo los iconos */
+    .nav-link p {
+        display: none;
+    }
 
+    /* Reduce el espacio entre iconos */
+    .nav-right {
+        gap: 12px;
+    }
 
-.post-actions {
-    display: flex;
-    justify-content: space-around;
-    padding: 4px 0;
-}
-
-@media (max-width: 480px) {
+    /* 2. Arregla los botones de los posts para que no salgan volando */
     .action-btn {
-        font-size: 12px; /* Letra más pequeña en móviles */
         padding: 8px 4px;
+        font-size: 11px; /* Letra más chica para que quepa */
         flex: 1;
-        display: flex;
-        flex-direction: column; /* Icono arriba, texto abajo */
-        align-items: center;
+        flex-direction: column; /* Icono arriba y texto abajo */
         gap: 2px;
     }
-    
+
     .action-btn span {
-        font-size: 20px; /* Iconos un poco más grandes para que sea fácil tocarlos */
+        font-size: 20px; /* Tamaño cómodo para el pulgar */
+    }
+
+    /* 3. Asegura que el contenedor principal no tenga márgenes raros */
+    .grid-app {
+        padding: 0 10px;
+        margin: 10px auto;
+    }
+}
+
+/* Para celulares muy delgados */
+@media (max-width: 400px) {
+    .search-container {
+        display: none; /* Esconde el buscador si el espacio es crítico */
+    }
+    
+    .logo {
+        padding: 4px 6px;
+        font-size: 16px;
     }
 }
