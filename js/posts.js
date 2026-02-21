@@ -1,10 +1,9 @@
 import { db, auth } from './firebase-config.js';
 import { 
     collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, 
-    doc, updateDoc, arrayUnion, arrayRemove, increment 
+    doc, updateDoc, arrayUnion, arrayRemove, increment, deleteDoc // Añadido deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// IMPORTANTE: Agregamos la función para detectar al usuario
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const btnPublish = document.getElementById("btn-publish-final");
@@ -15,28 +14,21 @@ const postsContainer = document.getElementById("posts-container");
 const CLOUD_NAME = "dzgbahmog"; 
 const UPLOAD_PRESET = "ml_default"; 
 
-// 1. VARIABLE GLOBAL PARA EL USUARIO
 let currentUser = null;
 
-// 2. DETECTAR SI HAY UN USUARIO CONECTADO
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
-        // Actualizamos la interfaz con los datos reales del perfil
         if(document.querySelector(".avatar-nav")) document.querySelector(".avatar-nav").src = user.photoURL || "https://i.pravatar.cc/150";
         if(document.querySelector(".info h3")) document.querySelector(".info h3").innerText = user.displayName || "Usuario";
     } else {
-        // Si no hay nadie logueado, lo mandamos al login automáticamente
         window.location.href = "login.html";
     }
 });
 
-// --- PUBLICAR POST (AHORA CON DATOS REALES) ---
 btnPublish.onclick = async () => {
     const file = fileInput.files[0];
     const text = postText.value;
-    
-    // Si no hay usuario o no hay contenido, no hace nada
     if (!currentUser || (!file && !text)) return;
     
     btnPublish.disabled = true;
@@ -53,11 +45,10 @@ btnPublish.onclick = async () => {
             url = data.secure_url;
         }
 
-        // GUARDAMOS EN FIREBASE CON LOS DATOS DEL PERFIL ACTUAL
         await addDoc(collection(db, "posts"), {
-            autor: currentUser.displayName,  // Nombre real de la cuenta
-            fotoAutor: currentUser.photoURL, // Foto real de la cuenta
-            userId: currentUser.uid,         // ID único del usuario
+            autor: currentUser.displayName,
+            fotoAutor: currentUser.photoURL,
+            userId: currentUser.uid,
             contenido: text,
             imagenUrl: url,
             fecha: serverTimestamp(),
@@ -75,7 +66,6 @@ btnPublish.onclick = async () => {
     }
 };
 
-// --- RENDERIZAR FEED ---
 const q = query(collection(db, "posts"), orderBy("fecha", "desc"));
 
 onSnapshot(q, (snap) => {
@@ -84,20 +74,35 @@ onSnapshot(q, (snap) => {
         const d = postDoc.data();
         const postId = postDoc.id; 
         
-        // Verificamos si el usuario actual le dio like
         const hasLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
         const likesCount = d.likedBy ? d.likedBy.length : 0;
 
         const article = document.createElement("article");
         article.className = "post-card";
         article.innerHTML = `
-            <header class="post-header">
-                <img src="${d.fotoAutor || 'https://i.pravatar.cc/150'}" class="avatar-sm">
-                <div>
-                    <h4>${d.autor}</h4>
-                    <p style="font-size:12px; color:gray;">Publicado ahora</p>
+            <header class="post-header" style="display: flex; justify-content: space-between; align-items: start; padding: 12px; position: relative;">
+                <div style="display: flex; gap: 10px;">
+                    <img src="${d.fotoAutor || 'https://i.pravatar.cc/150'}" class="avatar-sm">
+                    <div>
+                        <h4 style="margin:0;">${d.autor}</h4>
+                        <p style="font-size:12px; color:gray; margin:0;">Publicado ahora</p>
+                    </div>
                 </div>
+
+                ${currentUser && d.userId === currentUser.uid ? `
+                    <div style="position: relative;">
+                        <button class="action-btn-dots" id="dots-${postId}" style="background:none; border:none; cursor:pointer; color:#666;">
+                            <span class="material-symbols-rounded">more_horiz</span>
+                        </button>
+                        <div id="menu-${postId}" class="card" style="display:none; position:absolute; right:0; top:30px; z-index:100; width:120px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding:5px;">
+                            <button id="del-${postId}" style="width:100%; background:none; border:none; color:red; display:flex; align-items:center; gap:5px; cursor:pointer; padding:8px; font-weight:600;">
+                                <span class="material-symbols-rounded" style="font-size:18px;">delete</span> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                ` : ""}
             </header>
+
             <div style="padding:0 16px 12px; font-size:14px;">${d.contenido}</div>
             ${d.imagenUrl ? `<img src="${d.imagenUrl}" class="post-img">` : ""}
             
@@ -124,7 +129,25 @@ onSnapshot(q, (snap) => {
             </div>
         `;
 
-        // Lógica de Likes usando el UID real
+        // Lógica de los tres puntitos
+        if (currentUser && d.userId === currentUser.uid) {
+            const btnDots = article.querySelector(`#dots-${postId}`);
+            const menu = article.querySelector(`#menu-${postId}`);
+            const btnDel = article.querySelector(`#del-${postId}`);
+
+            btnDots.onclick = (e) => {
+                e.stopPropagation();
+                menu.style.display = menu.style.display === "none" ? "block" : "none";
+            };
+
+            btnDel.onclick = async () => {
+                if(confirm("¿Seguro que quieres borrar este post?")) {
+                    await deleteDoc(doc(db, "posts", postId));
+                }
+            };
+        }
+
+        // Lógica de Likes
         article.querySelector(`#like-${postId}`).onclick = async () => {
             if(!currentUser) return;
             const postRef = doc(db, "posts", postId);
@@ -135,8 +158,6 @@ onSnapshot(q, (snap) => {
             }
         };
 
-        // ... (el resto de las funciones de compartir y comentarios se mantienen igual)
-        
         article.querySelector(`#share-${postId}`).onclick = async () => {
             try {
                 if (navigator.share) {
